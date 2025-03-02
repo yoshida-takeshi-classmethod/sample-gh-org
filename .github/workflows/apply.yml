@@ -1,0 +1,99 @@
+name: terraform apply
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+    paths:
+      - 'terraform/*.tf'
+      - 'users/*.csv'
+      - '.github/workflows/*.yml'
+
+jobs:
+  apply:
+    name: terraform apply
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: setup terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.10.5
+
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ap-northeast-1
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - run: terraform init
+        working-directory: terraform
+
+      - name: Make script executable
+        run: chmod +x ./script.sh
+        working-directory: shell
+
+      - name: Generate GitHub Apps token
+        id: generate
+        env:
+          APP_ID: ${{ secrets.APP_ID }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+        run: |
+          ./script.sh
+        working-directory: shell
+
+      - id: apply
+        run: terraform apply -auto-approve -no-color
+        working-directory: terraform
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ steps.generate.outputs.token }}
+
+      # terraform apply成功時・失敗時それぞれの結果をプルリクエストに出力
+      - uses: actions/github-script@v6
+        if: steps.apply.outcome == 'failure'
+        env:
+          STDERR: "```${{ steps.apply.outputs.stderr }}```"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: process.env.STDERR
+            });
+            core.setFailed('terraform apply failed');
+
+      - uses: actions/github-script@v6
+        if: steps.apply.outcome == 'success'
+        env:
+          STDOUT: "```${{ steps.apply.outputs.stdout }}```"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: process.env.STDOUT
+            })
+
+      - name: Revoke GitHub Apps token
+        if: ${{ always() }}
+        env:
+          GITHUB_TOKEN: ${{ steps.generate.outputs.token }}
+        run: |
+          curl --location --silent --request DELETE \
+            --url "${GITHUB_API_URL}/installation/token" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}"
