@@ -37,7 +37,7 @@ GitHub Organization上のOrganization及びチームのメンバーをTerraform�
 └── README.md
 ```
 
-## 注釈
+## 引用
 
 GitHub Appsトークン生成スクリプトとGitHub Actionsワークフロー上のGitHub Appsトークン生成に関するステップは下記の記事から引用しております。
 
