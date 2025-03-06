@@ -41,8 +41,8 @@ module "organization" {
 | 名前 | タイプ | 説明 |
 | --- | --- | --- |
 | `name` | `string` | 組織の名前を指定します。 |
-| `owners` | `list` | Owner（組織ロール）を指定します。例ではcsvを読み込んだlocal変数を指定する形としています。 |
-| `members` | `list` | Member（組織ロール）を指定します。例ではcsvを読み込んだlocal変数を指定する形としています。 |
+| `owners` | `list` | Owner（組織ロール）を割り当てたいユーザーを指定します。例ではcsvを読み込んだlocal変数を指定する形としています。 |
+| `members` | `list` | Member（組織ロール）を割り当てたいユーザーを指定します。例ではcsvを読み込んだlocal変数を指定する形としています。 |
 | `blocked_users` | `list` | ブロックユーザーを指定します。ブロックユーザーが存在しない場合は、この引数を利用する必要はありません。 |
 | `existing_teams` | `list` | 手動で作成した既存のTeamsを指定します。**このTeamsの名前はslug形式で指定する必要があります。** |
 | `teams` | `object` | Teamsを指定します。 オブジェクトの形式は、別途参照してください。 |
