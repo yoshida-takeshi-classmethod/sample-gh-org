@@ -5,8 +5,8 @@ data "github_user" "main" {
 
 # 既存のTeamを取得するデータソース
 data "github_team" "existing" {
-  for_each = local.existing_teams_map
-  slug     = each.value
+  for_each = var.existing_teams
+  slug     = each.key
 }
 
 provider "github" {
@@ -37,7 +37,7 @@ resource "github_team_membership" "main" {
   depends_on = [github_membership.main]
 
   for_each = local.team_memberships
-  team_id  = contains(var.existing_teams, each.value.team_name) ? data.github_team.existing[each.value.team_name].id : local.team_ids[each.value.team_name]
+  team_id  = contains(var.existing_teams, each.value.team_name) ? data.github_team.existing[each.value.team_name].id : github_team.main[each.value.team_name].id
   username = each.value.username
   role     = each.value.role
 }

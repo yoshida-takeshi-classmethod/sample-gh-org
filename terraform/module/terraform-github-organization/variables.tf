@@ -57,17 +57,10 @@ locals {
   ]
 
   # 既存のTeamと新規のTeamを分離
-  existing_teams_map = { for team_name in var.existing_teams : team_name => team_name }
   new_teams = { 
     for team in local.teams : team.name => team 
     if !contains(var.existing_teams, team.name)
   }
-
-  # Team IDの参照マップを作成
-  team_ids = merge(
-    { for t in github_team.main : t.name => t.id },
-    { for name, team in data.github_team.existing : name => team.id }
-  )
 
   teams_maintainers = flatten([
     for t in local.teams : [
